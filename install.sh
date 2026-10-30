@@ -6,7 +6,8 @@
 # Asks a few questions, then installs Docker if needed, downloads Quill, builds it, starts it (with Caddy in
 # front for HTTPS when asked) and makes the first admin account. Afterwards, manage it with the `quill` command.
 #
-# QUILL_REPO, QUILL_BRANCH and QUILL_DIR change where Quill comes from and where it goes.
+# QUILL_DIR sets where it goes (default /opt/quill), for example: curl ... | sudo QUILL_DIR=/srv/docs bash
+# QUILL_REPO and QUILL_BRANCH set where Quill comes from.
 
 # Everything is inside main(), so a download cut short can't run half a script.
 main() {
@@ -100,6 +101,36 @@ preflight() {
     . /etc/os-release
     OS_NAME="${PRETTY_NAME:-Linux}"
   fi
+  choose_names
+}
+
+# Each install is its own Docker Compose project, named after its folder, so two Quills (or a Quill set up by
+# hand) on one server never share containers or content. A run that failed part way keeps the name it chose.
+choose_names() {
+  if [ -f "$DIR/docker-compose.yml" ]; then
+    PROJECT="$(sed -n 's/^name: *//p' "$DIR/docker-compose.yml" | head -1)"
+  fi
+  if [ -z "${PROJECT:-}" ]; then
+    PROJECT="$(basename "$DIR" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9_\n-' '-' | sed 's/^[-_]*//; s/[-_]*$//')"
+    [ -n "$PROJECT" ] || PROJECT=quill
+    if command -v docker >/dev/null 2>&1; then
+      local base="$PROJECT" n=2
+      while project_taken "$PROJECT"; do
+        PROJECT="$base-$n"
+        n=$((n + 1))
+      done
+    fi
+  fi
+  # The quill command, unless another install already has it.
+  CMD=quill
+  if [ -e /usr/local/bin/quill ] && ! grep -qF "$DIR/app/scripts/quill.sh" /usr/local/bin/quill; then
+    case "$PROJECT" in quill*) CMD="$PROJECT" ;; *) CMD="quill-$PROJECT" ;; esac
+  fi
+}
+
+project_taken() { # project_taken NAME -> status 0 if a compose project or its content volume exists
+  docker volume inspect "${1}_quill-data" >/dev/null 2>&1 && return 0
+  [ -n "$(docker ps -aq --filter "label=com.docker.compose.project=$1" 2>/dev/null)" ]
 }
 
 port_in_use() { # port_in_use PORT -> prints what is listening, status 0 if busy
@@ -205,8 +236,22 @@ ask_access() {
   fi
 }
 
+# Whether this install's content (from a run that stopped part way) already has accounts.
+has_accounts() {
+  command -v docker >/dev/null 2>&1 || return 1
+  local volume
+  volume="$(docker volume inspect -f '{{.Mountpoint}}' "${PROJECT}_quill-data" 2>/dev/null)" || return 1
+  grep -q '"username"' "$volume/content/users.json" 2>/dev/null
+}
+
 ask_account() {
   step "Your admin account"
+  HAVE_ACCOUNTS=false
+  if has_accounts; then
+    HAVE_ACCOUNTS=true
+    say "This install already has accounts from an earlier run, so you'll sign in with one of those."
+    return
+  fi
   say "This is who signs in to the admin portal. You can add more accounts afterwards."
   while :; do
     ask ADMIN_USER "Username" "admin"
@@ -250,8 +295,9 @@ confirm_plan() {
     3) say "  Address:  127.0.0.1:$PORT${BASE_PATH} ${DIM}(your web server sends visitors here)${RESET}" ;;
     4) say "  Address:  $(site_url)" ;;
   esac
-  say "  Admin:    $ADMIN_USER ($ADMIN_NAME)"
+  if $HAVE_ACCOUNTS; then say "  Admin:    the accounts it already has"; else say "  Admin:    $ADMIN_USER ($ADMIN_NAME)"; fi
   say "  Folder:   $DIR"
+  [ "$CMD" = quill ] || say "  Command:  $CMD ${DIM}(quill is already used by another install)${RESET}"
   command -v docker >/dev/null 2>&1 || say "  Also:     installs Docker"
   ask_yes "Install now?" y || die "Nothing was installed."
 }
@@ -339,7 +385,7 @@ write_config() {
   {
     cat <<EOF
 # Written by the Quill installer. Manage it with the \`quill\` command.
-name: quill
+name: $PROJECT
 
 services:
   quill:
@@ -347,7 +393,7 @@ services:
       context: ./app
       args:
         QUILL_BASE_PATH: "$BASE_PATH"
-    image: quill:local
+    image: $PROJECT:local
     env_file: .env
     volumes:
       - quill-data:/data
@@ -413,8 +459,9 @@ EOF
   if [ "$MODE" = 3 ]; then
     cat >"$DIR/nginx-example.conf" <<EOF
 # An example for nginx: put these lines inside your site's server { } block, then reload nginx.
-# Quill is built for ${BASE_PATH:-the root}, so the address is passed on unchanged.
-location ${BASE_PATH:-/} {
+# Quill is built for ${BASE_PATH:-the root}, so the address is passed on unchanged. ^~ keeps the site's own
+# rules for .js, .css or images from catching Quill's files.
+location ^~ ${BASE_PATH:-/} {
     proxy_pass http://127.0.0.1:$PORT;
     proxy_http_version 1.1;
     proxy_set_header Host \$host;
@@ -462,7 +509,7 @@ build_and_start() {
     fi
     sleep 2
   done
-  $ready || die "Quill started but isn't answering. See what it says with: quill logs"
+  $ready || die "Quill started but isn't answering. See what it says with: docker compose --project-directory $DIR logs quill"
   done_ "Running"
 }
 
@@ -474,8 +521,9 @@ create_accounts() {
   step "Creating accounts"
   local existing
   existing="$(compose exec -T quill node quill-user.mjs count 2>/dev/null | tr -dc '0-9')"
-  if [ "${existing:-0}" -gt 0 ]; then
-    done_ "Accounts already exist from an earlier install; left as they are"
+  if $HAVE_ACCOUNTS || [ "${existing:-0}" -gt 0 ]; then
+    HAVE_ACCOUNTS=true
+    done_ "Kept the accounts this install already has"
   else
     add_account "$ADMIN_USER" "$ADMIN_NAME" admin "$ADMIN_PASSWORD" >>"$LOG" 2>&1 || die "Couldn't create the admin account. See $LOG."
     done_ "Admin account: $ADMIN_USER"
@@ -507,12 +555,12 @@ create_accounts() {
 }
 
 install_command() {
-  cat >/usr/local/bin/quill <<EOF
+  cat >"/usr/local/bin/$CMD" <<EOF
 #!/bin/sh
-# The Quill command. The real script comes with Quill, so \`quill update\` keeps it current.
+# The Quill command for $DIR. The real script comes with Quill, so \`$CMD update\` keeps it current.
 exec bash "$DIR/app/scripts/quill.sh" "\$@"
 EOF
-  chmod 755 /usr/local/bin/quill
+  chmod 755 "/usr/local/bin/$CMD"
   mv "$DIR/.quill.env.pending" "$DIR/quill.env"
 }
 
@@ -559,10 +607,14 @@ finish() {
     esac
   fi
   say ""
-  say "  Sign in as ${BOLD}$ADMIN_USER${RESET}. Manage Quill with the ${BOLD}quill${RESET} command:"
-  say "    quill user add     add an account          quill update    get the latest version"
-  say "    quill user passwd  reset a password        quill logs      see what Quill is doing"
-  say "    quill backup       save the docs content   quill help      everything else"
+  if $HAVE_ACCOUNTS; then
+    say "  Sign in with your existing account. Manage Quill with the ${BOLD}$CMD${RESET} command:"
+  else
+    say "  Sign in as ${BOLD}$ADMIN_USER${RESET}. Manage Quill with the ${BOLD}$CMD${RESET} command:"
+  fi
+  printf '    %-19s %-23s %-16s %s\n' "$CMD user add" "add an account" "$CMD update" "get the latest version"
+  printf '    %-19s %-23s %-16s %s\n' "$CMD user passwd" "reset a password" "$CMD logs" "see what Quill is doing"
+  printf '    %-19s %-23s %-16s %s\n' "$CMD backup" "save the docs content" "$CMD help" "everything else"
   say ""
 }
 

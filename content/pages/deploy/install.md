@@ -28,6 +28,39 @@ For the first two choices, add an `A` record for the domain with the server's IP
 Go to `/admin` on your new site and sign in with the account you made. Add more people under **Accounts**.
 :::
 
+## Install somewhere else
+
+Quill goes in `/opt/quill` unless you set `QUILL_DIR`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/IcyRelic/Quill/main/install.sh | sudo QUILL_DIR=/srv/docs bash
+```
+
+Each install is separate, so one server can run several. If the `quill` command already belongs to another install, the new one gets its own name, such as `quill-docs`. The installer tells you which.
+
+## Add Quill to a site you already run
+
+To serve the docs at an address like `https://example.com/docs`, next to a site nginx already serves:
+
+:::steps
+### Run the installer
+Choose **3** (a web server on this machine). Pick a free port, and enter `/docs` as the path.
+
+### Add the block it prints to your site
+Put the `location ^~ /docs { ... }` block from `/opt/quill/nginx-example.conf` inside your site's `server { }` block, then check and reload nginx:
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+### Set the public address
+Sign in at `https://example.com/docs/admin`. Under **Site settings**, set **Public address** to `https://example.com/docs`.
+:::
+
+:::note
+Behind Cloudflare, nginx sees plain HTTP. In the block, send Cloudflare's own header instead: `proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;`. Quill then marks sign-in cookies as HTTPS-only.
+:::
+
 ## The quill command
 
 The installer adds a `quill` command for everything after setup.
