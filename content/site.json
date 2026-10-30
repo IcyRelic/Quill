@@ -1,0 +1,133 @@
+{
+  "name": "Quill",
+  "tagline": "Docs",
+  "description": "Documentation for Quill: set up, write, organise and automate your docs site.",
+  "links": [
+    {
+      "label": "Documentation",
+      "href": "/"
+    },
+    {
+      "label": "API reference",
+      "href": "/api-reference/overview"
+    },
+    {
+      "label": "Changelog",
+      "href": "/changelog"
+    }
+  ],
+  "navigation": [
+    {
+      "title": "Get started",
+      "pages": [
+        "introduction",
+        "quickstart",
+        {
+          "title": "Deploy",
+          "pages": [
+            "deploy/docker",
+            "deploy/server",
+            "deploy/hosting"
+          ]
+        },
+        "inkbot"
+      ]
+    },
+    {
+      "title": "Create content",
+      "pages": [
+        "pages/create-a-page",
+        "pages/formatting",
+        {
+          "title": "Components",
+          "pages": [
+            "components/overview",
+            "components/callouts",
+            "components/steps",
+            "components/tabs",
+            "components/accordions",
+            "components/code",
+            "components/media"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Manage your site",
+      "pages": [
+        {
+          "title": "Admin portal",
+          "pages": [
+            "admin-portal/overview",
+            "admin-portal/editor",
+            "admin-portal/navigation",
+            "admin-portal/files"
+          ]
+        },
+        "admin-portal/settings"
+      ]
+    },
+    {
+      "title": "API reference",
+      "pages": [
+        "api-reference/overview",
+        "api-reference/authentication",
+        "api-reference/pages",
+        "api-reference/navigation",
+        "api-reference/site",
+        "api-reference/search-and-uploads"
+      ]
+    },
+    {
+      "title": "Help",
+      "pages": [
+        "help/faq",
+        "help/troubleshooting",
+        "changelog"
+      ]
+    }
+  ],
+  "home": {
+    "title": "Documentation",
+    "lead": "Everything you need to set up Quill, write clear guides, and keep them current by hand or with your bots.",
+    "cards": [
+      {
+        "title": "Quickstart",
+        "description": "Run Quill and publish your first page in about five minutes.",
+        "href": "/quickstart",
+        "icon": "quill"
+      },
+      {
+        "title": "Components",
+        "description": "Callouts, steps, tabs and the other blocks a page can use.",
+        "href": "/components/overview",
+        "icon": "blocks"
+      },
+      {
+        "title": "Admin portal",
+        "description": "Write with a live preview and arrange the sidebar.",
+        "href": "/admin-portal/overview",
+        "icon": "editor"
+      },
+      {
+        "title": "API reference",
+        "description": "Let bots create, update and organise pages.",
+        "href": "/api-reference/overview",
+        "icon": "terminal"
+      },
+      {
+        "title": "Deploy",
+        "description": "Put the site on Docker or your own server.",
+        "href": "/deploy/docker",
+        "icon": "server"
+      },
+      {
+        "title": "Connect InkBot",
+        "description": "Give your bots a key and let them keep the docs up to date.",
+        "href": "/inkbot",
+        "icon": "bot"
+      }
+    ]
+  },
+  "copyright": "© {year} Quill"
+}

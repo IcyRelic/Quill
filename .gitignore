@@ -1,0 +1,9 @@
+node_modules
+.next
+out
+.env
+.env.local
+.taste-skill/inspect
+*.tsbuildinfo
+next-env.d.ts
+content/api-keys.json
