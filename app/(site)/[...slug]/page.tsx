@@ -3,14 +3,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPage, getNeighbours } from "@/lib/content";
 import { renderMarkdown } from "@/lib/markdown";
-import { isAdmin } from "@/lib/auth";
+import { getSessionUser } from "@/lib/auth";
 import Toc from "@/components/Toc";
 
 type Props = { params: Promise<{ slug: string[] }> };
 
 async function load(parts: string[]) {
   const slug = parts.map(decodeURIComponent).join("/");
-  const [page, admin] = await Promise.all([getPage(slug), isAdmin()]);
+  const [page, admin] = await Promise.all([getPage(slug), getSessionUser().then(Boolean)]);
   if (!page || (page.draft && !admin)) return null;
   return { page, admin };
 }

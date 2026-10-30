@@ -14,7 +14,7 @@ Open a terminal in the Quill folder and install its packages.
 npm install
 ```
 
-### Set the three secrets
+### Set the secrets
 Copy the example settings file, then open `.env.local` and replace each value.
 
 ```bash
@@ -23,9 +23,15 @@ cp .env.example .env.local
 
 | Setting | What it is for |
 | --- | --- |
-| `QUILL_ADMIN_PASSWORD` | The password for the admin portal. |
 | `QUILL_SESSION_SECRET` | At least 16 random characters. Signs admin sessions. |
 | `QUILL_API_KEYS` | Optional. Keys for bots, separated by commas. Usually you make keys in the admin portal instead. |
+
+### Make your account
+Make the first admin account. It asks for a username and password.
+
+```bash
+npm run user -- add
+```
 
 ### Start the site
 Build it once, then start it.
@@ -38,7 +44,7 @@ npm start
 Open `http://localhost:3000`. While you work on the theme itself, `npm run dev` reloads on every change.
 
 ### Write your first page
-Go to `/admin`, sign in with your password and choose **New page**. Give it a title, pick a sidebar group and choose **Save**. The page is live straight away.
+Go to `/admin`, sign in with your account and choose **New page**. Give it a title, pick a sidebar group and choose **Save**. The page is live straight away.
 :::
 
 :::note

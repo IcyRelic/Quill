@@ -27,11 +27,18 @@ export async function requireWriter(req: Request) {
   return caller;
 }
 
-/** Only a signed-in admin, never an API key: managing keys with a key would let a leaked key make more. */
-export async function requireAdmin(req: Request) {
+/** A signed-in account, never an API key. */
+export async function requireUser(req: Request) {
   const caller = await getCaller(req);
   if (!caller) throw new ContentError("Sign in to the admin portal to do this.", 401);
-  if (caller.kind !== "admin") throw new ContentError("Only a signed-in admin can do this (manage keys and connections), not an API key.", 403);
+  if (caller.kind !== "user") throw new ContentError("Only a signed-in account can do this, not an API key.", 403);
+  return caller;
+}
+
+/** Only a signed-in admin, never an API key: managing keys with a key would let a leaked key make more. */
+export async function requireAdmin(req: Request) {
+  const caller = await requireUser(req);
+  if (caller.role !== "admin") throw new ContentError("Only an admin can do this. Editors can change pages, navigation, the home page and files.", 403);
   return caller;
 }
 
@@ -47,6 +54,9 @@ export async function requireApp(req: Request) {
  * A 303 to a path in Quill. The Location is relative, so it stays right behind a proxy: req.url can carry the
  * server's bind address (0.0.0.0 in Docker) instead of the address the browser used.
  */
+/** Whether the browser is on HTTPS, as the proxy in front reports it. Session cookies are then marked Secure. */
+export const isHttps = (req: Request) => (req.headers.get("x-forwarded-proto")?.split(",")[0].trim() ?? new URL(req.url).protocol.replace(":", "")) === "https";
+
 export const seeOther = (path: string) => new NextResponse(null, { status: 303, headers: { location: withBase(path) } });
 
 /**

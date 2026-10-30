@@ -1,7 +1,9 @@
 import { listApps, listKeys } from "@/lib/keys";
 import ApiKeys from "@/components/admin/ApiKeys";
+import { requireAdminScreen } from "@/lib/auth";
 
 export default async function ApiScreen() {
+  await requireAdminScreen();
   const [keys, apps] = await Promise.all([listKeys(), listApps()]);
   return (
     <>

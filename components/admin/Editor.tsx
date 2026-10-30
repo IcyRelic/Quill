@@ -11,7 +11,7 @@ import VisualEditor from "./editor/VisualEditor";
 type Mode = "visual" | "markdown";
 const MODE_KEY = "quill-editor-mode";
 
-type Props = { initial: Page | null; initialGroup: string; groups: string[]; adminName: string };
+type Props = { initial: Page | null; initialGroup: string; groups: string[]; userName: string };
 
 const SNIPPETS: { label: string; text: string; wrap?: [string, string] }[] = [
   { label: "Heading", text: "\n## Heading\n" },
@@ -37,7 +37,7 @@ const slugify = (s: string) =>
     .replace(/-+/g, "-")
     .replace(/(^-|-$)/g, "");
 
-export default function Editor({ initial, initialGroup, groups, adminName }: Props) {
+export default function Editor({ initial, initialGroup, groups, userName }: Props) {
   const router = useRouter();
   const isNew = !initial;
   const [title, setTitle] = useState(initial?.title ?? "");
@@ -430,7 +430,7 @@ export default function Editor({ initial, initialGroup, groups, adminName }: Pro
                 <dt>Last saved</dt>
                 <dd>{new Date(savedAt ?? initial.updated).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}</dd>
                 <dt>Last edited by</dt>
-                <dd>{savedAt ? adminName : (initial.updatedBy ?? "Unknown")}</dd>
+                <dd>{savedAt ? userName : (initial.updatedBy ?? "Unknown")}</dd>
                 <dt>Words</dt>
                 <dd>{body.split(/\s+/).filter(Boolean).length.toLocaleString()}</dd>
               </dl>

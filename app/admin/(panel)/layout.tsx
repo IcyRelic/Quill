@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { isAdmin } from "@/lib/auth";
+import { getSessionUser } from "@/lib/auth";
 import { getSite, listPages } from "@/lib/content";
 import { withBase } from "@/lib/basePath";
 import AdminNav from "@/components/admin/AdminNav";
@@ -9,7 +9,8 @@ import AdminNav from "@/components/admin/AdminNav";
 export const dynamic = "force-dynamic";
 
 export default async function Panel({ children }: { children: React.ReactNode }) {
-  if (!(await isAdmin())) {
+  const user = await getSessionUser();
+  if (!user) {
     const path = (await headers()).get("x-quill-path") ?? "/admin";
     redirect(`/admin/login?next=${encodeURIComponent(path)}`);
   }
@@ -23,8 +24,11 @@ export default async function Panel({ children }: { children: React.ReactNode })
           <span>{site.name}</span>
           {site.tagline ? <span className="wordmark-sub">{site.tagline}</span> : null}
         </Link>
-        <span className="a-topbar-tag">Admin</span>
+        <span className="a-topbar-tag">{user.role === "admin" ? "Admin" : "Editor"}</span>
         <div className="a-topbar-actions">
+          <Link className="a-topbar-user" href="/admin/account" title="Your account">
+            {user.name}
+          </Link>
           <a className="a-btn" href={withBase("/")} target="_blank" rel="noreferrer">
             View site
           </a>
@@ -35,7 +39,7 @@ export default async function Panel({ children }: { children: React.ReactNode })
           </form>
         </div>
       </header>
-      <AdminNav pageCount={pages.length} draftCount={pages.filter((p) => p.draft).length} />
+      <AdminNav pageCount={pages.length} draftCount={pages.filter((p) => p.draft).length} admin={user.role === "admin"} />
       <main className="a-main">{children}</main>
     </div>
   );

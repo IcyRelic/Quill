@@ -1,2 +1,7 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Scripts run on Linux servers: always LF, whatever the checkout settings.
+*.sh text eol=lf
+*.mjs text eol=lf
+Dockerfile text eol=lf

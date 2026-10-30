@@ -28,7 +28,7 @@ x-api-key: <key>
 - An app such as InkBot can instead **connect** (see "Connecting an app" below): an admin approves a code, the app gets its own token, and it makes a key for each of its bots. The app's token works anywhere a key does.
 - With no keys of either kind, the API is read-only.
 - A key also unlocks drafts: with a valid key, `GET /pages`, `GET /pages/{slug}` and `GET /navigation` include draft pages.
-- Writes record who made them: the page's `updatedBy` is the key's name (or the app's name for its own token, `Legacy API key` for a key from `QUILL_API_KEYS`, or the admin's name from Site settings for portal edits).
+- Writes record who made them: the page's `updatedBy` is the key's name (or the app's name for its own token, `Legacy API key` for a key from `QUILL_API_KEYS`, or the signed-in account's name for portal edits).
 - The admin portal uses a session cookie plus `x-quill-admin: 1`. A connector should always use a key instead.
 
 ### Errors
@@ -78,7 +78,7 @@ A slug is a page's address, without a leading slash: `quickstart`, `deploy/docke
 ```
 
 - `updated` is an ISO timestamp that Quill sets on every save.
-- `updatedBy` is who saved it last: a key's name, a connected app's name, `Legacy API key`, or the admin's name. `null` for pages saved before Quill recorded it.
+- `updatedBy` is who saved it last: a key's name, a connected app's name, `Legacy API key`, or the account's name. `null` for pages saved before Quill recorded it.
 - `url` is the page's address on the site. It is always there.
 - `previewUrl` is a shareable link to a **draft**: anyone with it can read the page without signing in, with a "Draft preview" banner, and search engines are told not to index it. It's included whenever the page is a draft and the request has a key (or an admin session). The link stays the same when the page is saved or moved; `PATCH` with `resetPreview` makes a new one. Once the page is published the link redirects to `url`.
 - Both addresses use the Public address from Site settings (`publicUrl`) if one is set, else the address the request came in on.
@@ -272,7 +272,7 @@ To move a single page, it's simpler to `PATCH /pages/{slug}` with `group`, `fold
 - `logo` is the image beside the name (top bar, admin portal, sign-in); `favicon` is the browser tab icon. Both are addresses, usually `/uploads/...`.
 - `theme.colors` holds only the colours changed from Quill's defaults, as hex values. Leave a colour out (or send its default) to use the default; `{ "colors": {} }` resets them all. The names are `accent`, `accent-strong`, `accent-pale`, `accent-deep`, `accent-ink`, `ground`, `panel`, `raised`, `hover`, `art-ground`, `line`, `line-strong`, `ink`, `ink-soft`, `ink-faint`, `note`, `warn` and `danger`. Tints for highlights and borders follow the colour they come from.
 - `home.columns` is how many cards sit in a row on wide screens: 1, 2 (the default), 3 or 4.
-- `adminName` is the name shown for the admin: as `updatedBy` on portal edits and as who approved connected apps. Default `Admin`.
+- `adminName` is no longer used: each account has its own name, shown as `updatedBy` and on app approvals.
 - `publicUrl` is the site's public address, used in `url`, `previewUrl` and `verify_url`. Empty (the default) means the address each request came in on.
 - Sites saved before these settings existed get the defaults shown here, so every response has the full shape.
 
@@ -408,6 +408,25 @@ The key object never contains the key or its hash:
 Legacy keys can't be renamed or revoked here (`404` with an explanation). A name is required (up to 80 characters).
 
 An app object: `{ "id": "8d484d1c201f", "name": "InkBot on DESKTOP-X", "last4": "ZWLk", "approvedBy": "William", "createdAt": "...", "lastUsedAt": "..." }`.
+
+---
+
+## Accounts (admin portal only)
+
+The admin portal's sign-ins. Each call needs a signed-in session (the portal's cookie plus `x-quill-admin: 1`); API keys get `403`. Managing accounts needs an admin; `/api/v1/account` works for anyone signed in.
+
+| Call | Does | Returns |
+|---|---|---|
+| `GET /api/v1/users` | Every account, oldest first | `200 { "users": [...] }` |
+| `POST /api/v1/users` with `{ "username", "name", "password", "role" }` | Add an account. `role` is `admin` or `editor` | `201 { "user": {...} }`; `409` if the username is taken |
+| `PATCH /api/v1/users/{id}` with any of `{ "name", "role", "password" }` | Change an account. A new password signs it out everywhere | `200 { "user": {...} }` |
+| `DELETE /api/v1/users/{id}` | Remove an account; it is signed out at once. Not your own | `200 { "ok": true }` |
+| `GET /api/v1/account` | The signed-in account | `200 { "user": {...} }` |
+| `PATCH /api/v1/account` with `{ "name" }` or `{ "currentPassword", "password" }` | Change your name or password | `200 { "user": {...} }` |
+
+A user object: `{ "id": "3f9a1c2b7d4e", "username": "william", "name": "William", "role": "admin", "createdAt": "...", "lastSignInAt": "..." }`. Passwords are stored as scrypt hashes and never returned. Usernames are 2 to 32 characters (letters, numbers, `.`, `-`, `_`) and are stored in lower case; passwords need at least 8 characters. The last admin can't be removed or made an editor (`409`).
+
+Editors can change pages, navigation, the home page and files. On `/api/v1/site` they may send only `home` and `navigation` (`403` otherwise), and they get `403` on keys, connections and accounts.
 
 ---
 

@@ -4,7 +4,7 @@ import type { SiteConfig } from "@/lib/content";
 import { Field, LinksEditor, SaveBar, ScreenHead, Section, useSiteDraft } from "./useSiteDraft";
 
 export default function SettingsForm({ initial }: { initial: SiteConfig }) {
-  const { site, set, dirty, saving, status, error, save } = useSiteDraft(initial, ["name", "tagline", "description", "links", "copyright", "footer", "adminName", "publicUrl"]);
+  const { site, set, dirty, saving, status, error, save } = useSiteDraft(initial, ["name", "tagline", "description", "links", "copyright", "footer", "publicUrl"]);
   const year = String(new Date().getFullYear());
 
   return (
@@ -31,15 +31,10 @@ export default function SettingsForm({ initial }: { initial: SiteConfig }) {
           </Field>
         </Section>
 
-        <Section title="Admin and links" description="Your name, as shown on pages you edit and apps you approve, and the address Quill puts in links it hands out.">
-          <div className="a-two">
-            <Field id="s-admin" label="Your name" hint="For example William. Shown as “Last edited by” and on connected apps.">
-              <input id="s-admin" className="a-input" aria-describedby="s-admin-hint" value={site.adminName} onChange={(e) => set((s) => ({ ...s, adminName: e.target.value }))} />
-            </Field>
-            <Field id="s-url" label="Public address" hint="Optional, for example https://docs.example.org, including any sub-path such as /docs. Used in preview links and page links. Empty: the address the request came in on.">
-              <input id="s-url" className="a-input" aria-describedby="s-url-hint" placeholder="https://docs.example.org" value={site.publicUrl} onChange={(e) => set((s) => ({ ...s, publicUrl: e.target.value.trim() }))} />
-            </Field>
-          </div>
+        <Section title="Public address" description="The address Quill puts in links it hands out. Each person sets the name shown on their edits under Your account.">
+          <Field id="s-url" label="Public address" hint="Optional, for example https://docs.example.org, including any sub-path such as /docs. Used in preview links and page links. Empty: the address the request came in on.">
+            <input id="s-url" className="a-input" aria-describedby="s-url-hint" placeholder="https://docs.example.org" value={site.publicUrl} onChange={(e) => set((s) => ({ ...s, publicUrl: e.target.value.trim() }))} />
+          </Field>
         </Section>
 
         <Section title="Top bar" description="Up to five links next to the logo. The one that matches the reader’s page is highlighted; a link to / covers every page the others don’t.">

@@ -14,6 +14,8 @@ ENV NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0 QUILL_CONTENT_DIR=/data/conte
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/public ./public
+# Account management: docker compose exec <service> node quill-user.mjs add
+COPY --from=build /app/scripts/quill-user.mjs ./quill-user.mjs
 # Starter content, copied into the volume on first run only.
 COPY --from=build /app/content ./starter-content
 RUN printf '#!/bin/sh\nif [ ! -f /data/content/site.json ]; then mkdir -p /data/content && cp -r /app/starter-content/. /data/content/; fi\nexec node server.js\n' > /app/start.sh && chmod +x /app/start.sh

@@ -6,7 +6,15 @@ updated: "2026-10-28T12:00:00.000Z"
 
 ## The admin portal says it isn't set up
 
-`QUILL_ADMIN_PASSWORD` is missing, or `QUILL_SESSION_SECRET` is shorter than 16 characters. Set both in `.env.local` and restart.
+`QUILL_SESSION_SECRET` is missing or shorter than 16 characters. Set it in `.env.local` (the installer sets it for you) and restart.
+
+## The sign-in page says there are no accounts
+
+Make the first one on the server. See [Accounts](/admin-portal/accounts#the-first-account).
+
+## Everyone forgot their password
+
+On the server, `quill user passwd <username>` sets a new one (from the code, `npm run user -- passwd <username>`).
 
 ## Bots get 401 errors
 

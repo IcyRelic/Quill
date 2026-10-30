@@ -25,6 +25,7 @@
         {
           "title": "Deploy",
           "pages": [
+            "deploy/install",
             "deploy/docker",
             "deploy/server",
             "deploy/hosting"
@@ -61,7 +62,8 @@
             "admin-portal/overview",
             "admin-portal/editor",
             "admin-portal/navigation",
-            "admin-portal/files"
+            "admin-portal/files",
+            "admin-portal/accounts"
           ]
         },
         "admin-portal/settings"

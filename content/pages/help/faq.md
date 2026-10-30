@@ -17,7 +17,7 @@ Copy the `content` folder. It holds every page, setting and upload.
 :::
 
 :::accordion[Can more than one person edit?]
-Yes. Everyone signs in with the admin password. If two people save the same page, the last save wins.
+Yes. Each person has their own account, as an admin or an editor. See [Accounts](/admin-portal/accounts). If two people save the same page, the last save wins.
 :::
 
 :::accordion[Can I change the logo and colours?]

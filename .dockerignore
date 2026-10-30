@@ -4,3 +4,4 @@ node_modules
 .env.local
 .taste-skill
 content/api-keys.json
+content/users.json

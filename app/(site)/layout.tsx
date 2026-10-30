@@ -1,5 +1,5 @@
 import { getSite, getNavigation } from "@/lib/content";
-import { isAdmin } from "@/lib/auth";
+import { getSessionUser } from "@/lib/auth";
 import { withBase } from "@/lib/basePath";
 import TopBar from "@/components/TopBar";
 import Sidebar from "@/components/Sidebar";
@@ -8,7 +8,7 @@ import Enhance from "@/components/Enhance";
 export const dynamic = "force-dynamic";
 
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
-  const admin = await isAdmin();
+  const admin = !!(await getSessionUser());
   const [site, nav] = await Promise.all([getSite(), getNavigation({ includeDrafts: admin })]);
   const copyright = site.copyright.replace("{year}", String(new Date().getFullYear()));
   return (

@@ -2,11 +2,22 @@
 
 A self-hosted documentation platform, themed to match InkBot: a public docs site, an admin portal to edit and customise it by hand (visual or Markdown editor, navigation, home page, logo, colours, API keys), and an API so bots can edit it too. Next.js 16, no database. Pages are Markdown files on disk.
 
-## Run it
+## Install on a server
+
+One command sets up Docker, Quill, HTTPS and your admin account on a Linux server (Ubuntu or Debian, or any Linux with Docker):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/IcyRelic/Quill/main/install.sh | sudo bash
+```
+
+It asks how people will reach Quill (your domain with automatic HTTPS, behind Cloudflare, behind a web server you already run, or the server's IP), then for your admin account. Afterwards, the `quill` command updates Quill, manages accounts and makes backups (`quill help`).
+
+## Run it from the code
 
 ```bash
 npm install
-cp .env.example .env.local   # then set the password and session secret
+cp .env.example .env.local   # then set the session secret
+npm run user -- add          # make the first admin account
 npm run build
 npm start                    # http://localhost:3000
 ```
@@ -15,7 +26,6 @@ For development, `npm run dev`.
 
 | Variable | What it does |
 | --- | --- |
-| `QUILL_ADMIN_PASSWORD` | Password for `/admin`. |
 | `QUILL_SESSION_SECRET` | 16+ random characters used to sign admin sessions. |
 | `QUILL_API_KEYS` | Optional legacy API keys, comma-separated. Make keys in the admin portal under **API keys** instead; keys here keep working and show there read-only. |
 | `QUILL_CONTENT_DIR` | Where content is stored. Default `./content`. |
@@ -26,7 +36,8 @@ For development, `npm run dev`.
 ```bash
 docker build -t quill-docs .
 docker run -p 3000:3000 -v quill-data:/data \
-  -e QUILL_ADMIN_PASSWORD=... -e QUILL_SESSION_SECRET=... quill-docs
+  -e QUILL_SESSION_SECRET=... quill-docs
+docker exec -it <container> node quill-user.mjs add   # make the first admin account
 ```
 
 The first start copies the sample content into the `/data` volume. After that, the volume is the source of truth.
@@ -49,6 +60,7 @@ The sub-path is part of the build, so one build serves one path; rebuild to chan
 ```
 content/site.json          name, top bar links, sidebar (groups and dropdowns), home page, footer, logo, favicon, theme colours
 content/api-keys.json      API keys made in the portal (hashes only; keep it private)
+content/users.json         admin portal accounts (password hashes; keep it private)
 content/pages/**/*.md      one Markdown file per page (front matter: title, description, draft, updated)
 content/uploads/           files uploaded in the admin portal or through the API
 public/quill.svg           the default logo (public/icon.svg is the default browser tab icon)
@@ -60,6 +72,10 @@ app/api/v1/                the API             lib/         storage, navigation,
 ```
 
 You can edit the files directly; changes show on the next page load.
+
+## Accounts
+
+Everyone signs in to `/admin` with their own account, stored (hashed) in `content/users.json`. **Admins** can do everything; **editors** can change pages, navigation, the home page and files. Admins add people under **Accounts**. On the server, `node scripts/quill-user.mjs` (`npm run user --`, or `quill user` after the installer) adds, lists and removes accounts and resets passwords.
 
 ## Sidebar dropdowns
 
